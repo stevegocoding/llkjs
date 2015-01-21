@@ -8,6 +8,10 @@
         {
           "name": "tiles_data",
           "path": "tiles.json"
+        },
+        {
+          "name": "board_data",
+          "path": "board.json"
         }
       ]
     }, 

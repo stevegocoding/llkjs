@@ -43,7 +43,12 @@
     var _isFinished = false;
     
     function cacheAsset(name, asset) {
-      _cache[name] = asset;
+      if (asset === undefined) {
+        return _cache[name];
+      }
+      else {
+        _cache[name] = asset;
+      }
     }
     
     function getManifestBundle(bundle) {
@@ -114,18 +119,29 @@
    * TileDisplayObject, inheriting easel.js DisplayObject 
    * for tiled sheet rendering 
    * 
+   * Have to use the constructor to extend easel.js objects
    *******************************************************/ 
-  var TileDisplayObject = function(tileData) {
-    this.initialize(tileData);
+  var TileDisplayObject = function(tile) {
+    this.initialize(tile);
   };
 
   var super_p = createjs.DisplayObject.prototype;
   var p = TileDisplayObject.prototype = Object.create(super_p);
   p.constructor = TileDisplayObject;
 
-  p.initialize = function(tileData) {
+  p._tile = null;
+
+  p.initialize = function(tile) {
     super_p.initialize.apply(this, arguments);
-    this._tileData = tileData;
+    this._tile= tile;
+  };
+  
+  p.srcXY = function() {
+    var tilesAssetData = AssetsManager.cacheAsset('tiles_data');
+    var sx = this._tile.gridXY().x * tilesAssetData.width;
+    var sy = this._tile.gridXY().y * tilesAssetData.height;
+    
+    return {x: sx, y: sy};
   };
 
   /**
@@ -134,8 +150,135 @@
    * @param ignoreCache
    */
   p.draw = function(ctx, ignoreCache) {
+    ctx.save();
     
+    var img = AssetManager.cacheAsset('tilesheet'); 
+    var tilesAssetData = AssetsManager.cacheAsset('tiles_data');
+    var srcXY = this.srcXY(); 
+    var destXY = this._tile.worldXY();
+
+    this.drawTile(ctx, 
+        img, 
+        srcXY.x,
+        srcXY.y,
+        tilesAssetData.width
+        tilesAssetData.height,
+        destXY.x,
+        destXY.y);
+
+    ctx.restore();
   };
+  
+  p.drawTile = function(ctx, img, x, y, w, h, dx, dy) {
+    ctx.drawImage(img, x, y, w, h, dx, dy); 
+  };
+  
+  
+  /********************************************************
+   * The Tile Entity
+   *  - This is the prototype object of all tiles entities
+   *******************************************************/
+  Tile = (function() {
+    var exp = {}; 
+
+    /*
+       TileEntityData: 
+       {
+         "gridX" --- grid coordinates on board
+         "gridY"
+         
+         "typeID" --- the id of the tile's type, 0 for empty/dummy tile 
+       }
+     */ 
+    
+    exp.init = function(boardData, tileData) {
+      this._boardData = boardData;
+      this._tileData = tileData; 
+      this._displayObject = new TileDisplayObject(tileData);
+    };
+    
+    exp.gridXY = function(x, y) { 
+      if (gridY === undefined && y === undefined) {
+        return {x: this._tileData.gridX, y: this._tileData.gridY};
+      }
+      this._tileData.gridX = gridX; 
+      this._tileData.gridY = gridY;
+      updateWorldPos();
+    };
+    
+    exp.worldXY = function() {
+      return {x: this._worldX, y: this._worldY);
+    };
+    
+    exp.addToStage = function(stage) {
+      stage.addChild(this._displayObject);
+    }; 
+    
+    exp.updateWorldPos = function() {
+      this._worldX = this._baordData.worldX + this._tileData._gridX * this._tileData.tileSize; 
+      this._worldY = this._baordData.worldY + this._tileData._gridY * this._tileData.tileSize; 
+    };
+
+    return exp; 
+  }());
+  
+  /********************************************************
+   * The Board Entity
+   *  - Manage all the tiles on the board
+   *  - Implement the matching algorithm
+   *******************************************************/
+  Board = (function() {
+    var exp = {}; 
+    
+    /** 
+        BoardEntityData: 
+        {
+         "worldX" --- the absolute x coords in the world 
+         "worldY" 
+         
+         "grid" --- An array of cells, each element is tile's type ID
+        }
+     */
+
+    exp.init = function(boardData) { 
+      var numTiles = boardData.numTiles * boardData.numTiles;
+      this._boardData = boardData;
+     
+      // Pre-allocate the arrays
+      this._tiles = [];
+      this._grid = []; 
+      this._tiles.length = numTiles;
+      this._grid.length = numTiles; 
+    };
+    
+    exp.grid = function() {
+      return this._boardData.grid;
+    };
+    
+    exp.setTile = function(tile, x, y) {   
+      this._tiles[y * this._boardData.numTiles + x] = tile; 
+    }; 
+
+    return var; 
+  }());
+  
+  /********************************************************
+   * The Tile Factory for tiles creation 
+   *******************************************************/
+  Factory = (function() {
+    var exp = {}; 
+
+    exp.createTile = function(tileAsset, defaultData) { 
+      
+    }
+    
+    exp.createBoard = function(boardAsset, defaultData) {
+      
+    }
+    
+    return exp;
+  }());
+
 
   
   /********************************************************
@@ -146,13 +289,16 @@
   Game = (function() {
     var exp = {};
     
-    /** Private Variables */
-    var _staage;
+    /** Module's Private Variables */
+    var _stage;
     var _curStat;
     var _states = {};
     var _assetManifest = 'assets/assets.json';
     
-    /** Private Methods */ 
+    var _board;
+    var _tiles = [];
+    
+    /** Module's Private Methods */ 
     function _regState(name, startFunc, procesFunc, exitFunc) { 
       _states[name] = {
         'onStart': startFunc,
@@ -164,9 +310,35 @@
     /** Public Interfaces */ 
     exp.init = function(canvas) {
       _stage = new createjs.Stage(canvas);
+      
+      // Create the board 
+      var boardAssetData = AssetManager.cacheAsset('board_data');
+      _board = Factory.createBoard(boardAssetData);
+      
+      // Create the tiles
+      var tilesAssetData = AssetManager.cacheAsset('tiles_data'); 
+      var grid = _board.grid();
+      
+      _.each(grid, function(cell, idx, list) {
+        var x = idx % boardAssetData.num_tiles;
+        var y = idx / boardAssetData.num_tiles;
+        var tileData = {
+          gridX: x,
+          gridY: y,
+          typeID: grid[idx]
+        };
+        var tile = Factory.createTile(tileData); 
+        _tiles.push(tile); 
+        _board.setTile(tile, x, y);
+      });
     };
+    
+    exp.start = function() {
+      createjs.Ticker.timingMode = createjs.Ticker.RAF;
+      createjs.Ticker.addEventListener("tick", _stage);
+    }
 
-    exp.getStage = function() {
+    exp.stage = function() {
       return _stage;
     }
 
@@ -188,7 +360,7 @@
     // Init the Game
     initGame();
     
-    //var stage = Game.getStage(); 
+    //var stage = Game.stage(); 
     
     /* 
     var testObj = new TileDisplayObject('assets/tiles.png'); 
@@ -197,9 +369,7 @@
     
     stage.addChild(testObj); 
 
-    createjs.Ticker.timingMode = createjs.Ticker.RAF;
-    createjs.Ticker.addEventListener("tick", stage);
     */
   });
+  
 }(window, window.jQuery, window._, window.createjs));
-
