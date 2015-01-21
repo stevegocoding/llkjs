@@ -1,4 +1,5 @@
 {
+  "root_path": "assets/",
   "bundles": [
     {
       "name": "manifests",

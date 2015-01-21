@@ -36,9 +36,9 @@
    *******************************************************/
   AssetsManager = (function() {
     var exp = {};
-
-    var _manifestPath = 'assets/assets.json';
+    
     var _cache = {};
+    var _assetRootPath;
     var _numAssets = 0;
     var _isFinished = false;
     
@@ -49,23 +49,23 @@
     function getManifestBundle(bundle) {
       _.each(bundle.content, function(asset, idx, list) { 
         $.ajax({ 
-          url: asset.path,
+          url: _assetRootPath + asset.path,
           type: 'GET',
           dataType: 'JSON'
         })
         .done(function(data) {
-          console.log('Json asset loading OK! --- ' + data.name);
+          console.log('Json asset loading OK!');
           cacheAsset(data.name, data); 
         })
         .fail(function(jqXHR, textStatus, errorThrown) {
-          console.log('Json asset loading FAILED! --- ' + errorrThrown);
+          console.log('Json asset loading FAILED! - ' + errorrThrown);
         });
       });
     }
     
     function getImagesBundle(bundle) {
       _.each(bundle.content, function(asset, idx, list) { 
-        loadImage(asset.path)
+        loadImage(_assetRootPath + asset.path)
         .done(function(image) {
           console.log('Image loading OK! --- ' + image.src); 
           cacheAsset(asset.name, image);
@@ -76,21 +76,22 @@
       });
     }
     
-    exp.downloadAll = function() {
+    exp.downloadAll = function(manifestPath) {
       // Get the manifest first
       $.ajax({
-        url: _manifestPath,
+        url: manifestPath,
         type: 'GET',
         dataType: 'JSON'
       })
       .done(function (manifestData) {
         console.log('Manifest file download - OK!');
         
+        _assetRootPath = manifestData.root_path;
+        
         var bundles = manifestData.bundles; 
         _.each(bundles, function(bundle, idx, list) {
           _numAssets = _numAssets + bundle.content.length;
-        }
-        
+        });
         _.each(bundles, function(bundle, idx, list) {
           if (bundle.name === 'manifests') { 
             getManifestBundle(bundle);
@@ -148,7 +149,8 @@
     /** Private Variables */
     var _staage;
     var _curStat;
-    var _states = {}
+    var _states = {};
+    var _assetManifest = 'assets/assets.json';
     
     /** Private Methods */ 
     function _regState(name, startFunc, procesFunc, exitFunc) { 
@@ -172,6 +174,10 @@
   })();
 
   function initGame() {
+    // Download all the assets
+    AssetsManager.downloadAll('assets/assets.json');
+    
+    // Init the canvas
     canvasDom = $('#game-canvas')[0];
     Game.init(canvasDom);
   }
@@ -182,8 +188,9 @@
     // Init the Game
     initGame();
     
-    var stage = Game.getStage(); 
+    //var stage = Game.getStage(); 
     
+    /* 
     var testObj = new TileDisplayObject('assets/tiles.png'); 
     testObj.x = 100;
     testObj.y = 100;
@@ -192,7 +199,7 @@
 
     createjs.Ticker.timingMode = createjs.Ticker.RAF;
     createjs.Ticker.addEventListener("tick", stage);
-    
+    */
   });
 }(window, window.jQuery, window._, window.createjs));
 
