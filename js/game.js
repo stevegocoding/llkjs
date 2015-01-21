@@ -236,6 +236,8 @@
          "worldX" --- the absolute x coords in the world 
          "worldY" 
          
+         "nunTiles"
+         "tiles" 
          "grid" --- An array of cells, each element is tile's type ID
         }
      */
@@ -245,10 +247,10 @@
       this._boardData = boardData;
      
       // Pre-allocate the arrays
-      this._tiles = [];
-      this._grid = []; 
-      this._tiles.length = numTiles;
-      this._grid.length = numTiles; 
+      this._boardData._tiles = [];
+      this._boardData._grid = []; 
+      this._boardData._tiles.length = numTiles;
+      this._boardData._grid.length = numTiles; 
     };
     
     exp.grid = function() {
@@ -256,7 +258,7 @@
     };
     
     exp.setTile = function(tile, x, y) {   
-      this._tiles[y * this._boardData.numTiles + x] = tile; 
+      this._boardData._tiles[y * this._boardData.numTiles + x] = tile; 
     }; 
 
     return var; 
@@ -268,12 +270,16 @@
   Factory = (function() {
     var exp = {}; 
 
-    exp.createTile = function(tileAsset, defaultData) { 
-      
+    exp.createTile = function(defaultData) { 
+      var newTile = Object.create(Tile);
+      newTile.init(defaultData);
+      return newTile;
     }
     
-    exp.createBoard = function(boardAsset, defaultData) {
-      
+    exp.createBoard = function(defaultData) {
+      var newBoard = Object.create(Board);
+      newBoard.init(defaultData);
+      return newBoard;
     }
     
     return exp;
@@ -313,15 +319,20 @@
       
       // Create the board 
       var boardAssetData = AssetManager.cacheAsset('board_data');
-      _board = Factory.createBoard(boardAssetData);
+      var boardData = {
+        numTiles: boardAssetData.num_tiles,
+        worldX: 200,
+        worldY: 50
+      };
+      _board = Factory.createBoard(boardData);
       
       // Create the tiles
       var tilesAssetData = AssetManager.cacheAsset('tiles_data'); 
       var grid = _board.grid();
       
       _.each(grid, function(cell, idx, list) {
-        var x = idx % boardAssetData.num_tiles;
-        var y = idx / boardAssetData.num_tiles;
+        var x = idx % boardData.numTiles;
+        var y = idx / boardData.numTiles;
         var tileData = {
           gridX: x,
           gridY: y,
@@ -334,6 +345,11 @@
     };
     
     exp.start = function() {
+      // Add tiles to stage
+      _.each(_tiles, function(tile) { 
+        tile.addToStage(_stage);
+      });
+
       createjs.Ticker.timingMode = createjs.Ticker.RAF;
       createjs.Ticker.addEventListener("tick", _stage);
     }
@@ -354,11 +370,18 @@
     Game.init(canvasDom);
   }
   
+  function startGame() {
+    Game.start(); 
+  }
+  
   $(function() {
     // DOM is ready! 
     
     // Init the Game
     initGame();
+    
+    // Start 
+    startGame();
     
     //var stage = Game.stage(); 
     
