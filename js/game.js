@@ -1,34 +1,130 @@
 (function(window, $, _, createjs) {
-  /** TileDisplayObject, inheriting easel.js DisplayObject for tiled sheet rendering */ 
- 
-  /*
-  TileDisplayObject = (function () { 
-    var super_p = createjs.Bitmap.prototype;
-    var exp = Object.create(super_p);
-    
-    exp.init = function(tileData) { 
-      super_p.initialize.call(this);
-      this.tileData = tileData;
-    }; 
+  /********************************************************
+   * Utility Functions
+   *******************************************************/
+  function loadImage(url) {
+    function _loadImg(deferred) {
+      var image = new Image();
 
-    exp.draw = function(ctx, ignoreCache) {
-      super_p.draw.apply(this, arguments); 
+      image.onload = loaded;
+      image.onerror = errored; 
+      image.onabort = errored; 
+      image.src = url;
+
+      function loaded() {
+        unbindEvents();
+        deferred.resolve(image);
+      }
+      function errored() {
+        unbindEvents();
+        deferred.reject(image);
+      }
+      function unbindEvents() {
+        image.onload = null;
+        image.onerror = null;
+        image.onabort = null;
+      }
     };
-    
-    return exp; 
-  })();
-  */
+    return $.Deferred(_loadImg).promise();
+  };
+  
+  
+  /********************************************************
+   * AssetsManager Module
+   *   - Handles the game states
+   *   - Using some global modules such as assets manager
+   *******************************************************/
+  AssetsManager = (function() {
+    var exp = {};
 
+    var _manifestPath = 'assets/assets.json';
+    var _cache = {};
+    var _numAssets = 0;
+    var _isFinished = false;
+    
+    function cacheAsset(name, asset) {
+      _cache[name] = asset;
+    }
+    
+    function getManifestBundle(bundle) {
+      _.each(bundle.content, function(asset, idx, list) { 
+        $.ajax({ 
+          url: asset.path,
+          type: 'GET',
+          dataType: 'JSON'
+        })
+        .done(function(data) {
+          console.log('Json asset loading OK! --- ' + data.name);
+          cacheAsset(data.name, data); 
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+          console.log('Json asset loading FAILED! --- ' + errorrThrown);
+        });
+      });
+    }
+    
+    function getImagesBundle(bundle) {
+      _.each(bundle.content, function(asset, idx, list) { 
+        loadImage(asset.path)
+        .done(function(image) {
+          console.log('Image loading OK! --- ' + image.src); 
+          cacheAsset(asset.name, image);
+        })
+        .fail(function() {
+          console.log('Image loading FAILED! --- ' + image.src);
+        });
+      });
+    }
+    
+    exp.downloadAll = function() {
+      // Get the manifest first
+      $.ajax({
+        url: _manifestPath,
+        type: 'GET',
+        dataType: 'JSON'
+      })
+      .done(function (manifestData) {
+        console.log('Manifest file download - OK!');
+        
+        var bundles = manifestData.bundles; 
+        _.each(bundles, function(bundle, idx, list) {
+          _numAssets = _numAssets + bundle.content.length;
+        }
+        
+        _.each(bundles, function(bundle, idx, list) {
+          if (bundle.name === 'manifests') { 
+            getManifestBundle(bundle);
+          }
+          else if (bundle.name === 'imgs') { 
+            getImagesBundle(bundle); 
+          } 
+        });
+      })
+      .fail(function () {
+        console.log('Manifest file download - Error!');
+      });
+    };
+
+    return exp;
+  }());
+  
+  
+  /********************************************************
+   * TileDisplayObject, inheriting easel.js DisplayObject 
+   * for tiled sheet rendering 
+   * 
+   *******************************************************/ 
   var TileDisplayObject = function(tileData) {
     this.initialize(tileData);
   };
 
-  var super_p = createjs.Bitmap.prototype;
+  var super_p = createjs.DisplayObject.prototype;
   var p = TileDisplayObject.prototype = Object.create(super_p);
   p.constructor = TileDisplayObject;
 
   p.initialize = function(tileData) {
     super_p.initialize.apply(this, arguments);
+    this._tileData = tileData;
   };
 
   /**
@@ -37,13 +133,15 @@
    * @param ignoreCache
    */
   p.draw = function(ctx, ignoreCache) {
-    super_p.draw.apply(this, arguments);
+    
   };
 
   
-  /**
+  /********************************************************
    * The Game Module
-   */
+   *   - Handles the game states
+   *   - Using some app-level modules such as assets manager
+   *******************************************************/
   Game = (function() {
     var exp = {};
     

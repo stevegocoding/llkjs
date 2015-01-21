@@ -1,0 +1,28 @@
+{
+  "bundles": [
+    {
+      "name": "manifests",
+      "content": 
+      [
+        {
+          "name": "tiles_data",
+          "path": "tiles.json"
+        }
+      ]
+    }, 
+    {
+      "name": "imgs",
+      "content": 
+      [
+        {
+          "name": "background",
+          "path": "bg.png"
+        },
+        {
+          "name": "tilesheet",
+          "path": "tiles.png" 
+        }
+      ]
+    }
+  ]
+}
