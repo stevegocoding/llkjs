@@ -188,6 +188,10 @@
     ctx.drawImage(img, x, y, w, h, dx, dy, w, h); 
   };
   
+  p.tile = function() { 
+    return this._tile;
+  };
+  
   
   /********************************************************
    * The Tile Entity
@@ -231,8 +235,8 @@
     }; 
     
     exp.updateWorldPos = function() {
-      this._worldX = this._boardData.worldX + this._tileData.gridX * (this._tileData.width + 4); 
-      this._worldY = this._boardData.worldY + this._tileData.gridY * (this._tileData.height + 4); 
+      this._worldX = this._boardData.worldX + this._tileData.gridX * (this._tileData.width + this._boardData.gapX); 
+      this._worldY = this._boardData.worldY + this._tileData.gridY * (this._tileData.height + this._boardData.gapY); 
     };
    
     exp.assetName = function() {
@@ -281,7 +285,8 @@
       }
       
       if (x === dx && y === dy) { 
-        found = new ; 
+        found = true; 
+        return; 
       }
       
       // Try all 4 directions from current cell
@@ -356,6 +361,18 @@
     exp.setTile = function(tile, x, y) {   
       this._boardData.tiles[y * this._boardData.numTiles + x] = tile; 
     }; 
+   
+    exp.numTilesSide = function() {
+      return this._boardData.numTiles; 
+    };
+    
+    exp.gapXY = function() {
+      return {x: this._boardData.gapX, y: this._boardData.gapY };
+    };
+    
+    exp.worldXY = function() {
+      return {x: this._boardData.worldX, y: this._boardData.worldY};
+    };
 
     return exp; 
   }());
@@ -412,6 +429,27 @@
     function genGrid(template) {
       return template; 
     }
+    
+    function tileClickHandler(tile) { 
+      var xy = tile.gridXY();
+      console.log("Tile Clicked! - " + "x: " + xy.x + " y: " + xy.y);
+    }
+
+    function worldXYToGridXY(worldX, worldY) { 
+      var numTiles = _board.numTilesSide();
+      var boardWorldPos = _board.worldXY();
+      var tilesGapXY = _board.gapXY();
+      var x = Math.floor((worldX - boardWorldPos.x) / (32 + tilesGapXY.x));
+      var y = Math.floor((worldY - boardWorldPos.y) / (32 + tilesGapXY.y));
+      
+      return {"x": x, "y": y};
+    }
+    
+    function clickEventHandler(e) {
+      // console.log("Mouse Clicked!" + " x: " + e.stageX + " y: " + e.stageY);
+      var gridXY = worldXYToGridXY(e.stageX, e.stageY);
+      console.log("Tile Clicked!" + " x: " + gridXY.x + " y: " + gridXY.y);
+    }
 
     /** Public Interfaces */ 
     exp.init = function(canvas) {
@@ -423,6 +461,8 @@
         grid: genGrid(boardAssetData.template),
         tileTypes: boardAssetData.tile_types,
         numTiles: boardAssetData.num_tiles,
+        gapX: 4,
+        gapY: 4,
         worldX: 0,
         worldY: 0
       };
@@ -455,6 +495,8 @@
       _.each(_tiles, function(tile) { 
         tile.addToStage(_stage);
       });
+      
+      _stage.addEventListener('click', clickEventHandler);
 
       createjs.Ticker.timingMode = createjs.Ticker.RAF;
       createjs.Ticker.addEventListener("tick", _stage);
