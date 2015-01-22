@@ -1,3 +1,9 @@
 .canvas-container {
-  margin: 100px auto 100px auto; 
+  margin: 50px auto 100px auto; 
+}
+
+#game-canvas {
+  position: absolute;
+  margin-left: auto;
+  margin-right: auto;
 }

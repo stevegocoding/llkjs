@@ -231,8 +231,8 @@
     }; 
     
     exp.updateWorldPos = function() {
-      this._worldX = this._boardData.worldX + this._tileData.gridX * this._tileData.width; 
-      this._worldY = this._boardData.worldY + this._tileData.gridY * this._tileData.height; 
+      this._worldX = this._boardData.worldX + this._tileData.gridX * (this._tileData.width + 4); 
+      this._worldY = this._boardData.worldY + this._tileData.gridY * (this._tileData.height + 4); 
     };
    
     exp.assetName = function() {
