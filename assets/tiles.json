@@ -1,7 +1,7 @@
 [ 
   {
     "name": "blank",
-    "sheet": "tilessheet",
+    "sheet": "tilesheet",
     "x": 0,
     "y": 0,
     "width": 32,

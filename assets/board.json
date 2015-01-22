@@ -1,5 +1,10 @@
 { 
+  "name": "board_data",
   "num_tiles": 5, 
+  "tile_types": {
+    "0": "blank",
+    "1": "blank"
+  },
 
   "template": [
     0, 0, 0, 0, 0,
