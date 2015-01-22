@@ -242,6 +242,10 @@
     exp.assetName = function() {
       return this._tileData.assetName;
     };
+    
+    exp.typeID = function() {
+      return this._tileData.typeID;
+    };
 
     return exp; 
   }());
@@ -330,7 +334,6 @@
           }
         }
       }
-      
     }
       
     /** 
@@ -372,6 +375,14 @@
     
     exp.worldXY = function() {
       return {x: this._boardData.worldX, y: this._boardData.worldY};
+    };
+    
+    exp.tryConnect = function(ta, tb) {
+      var gridXYA = ta.gridXY();
+      var gridXYB = tb.gridXY();
+      var path = [];
+      dfs(this._boardData.grid, gridXYA.x, gridXYA.y, gridXYB.x, gridXYB.y, -1, 0, path);
+      return found;
     };
 
     return exp; 
@@ -416,6 +427,7 @@
     
     var _board;
     var _tiles = [];
+    var _matchingTiles = [];  // the two tiles that are going to be tested if they can match
     
     /** Module's Private Methods */ 
     function _regState(name, startFunc, procesFunc, exitFunc) { 
@@ -429,14 +441,8 @@
     function genGrid(template) {
       return template; 
     }
-    
-    function tileClickHandler(tile) { 
-      var xy = tile.gridXY();
-      console.log("Tile Clicked! - " + "x: " + xy.x + " y: " + xy.y);
-    }
 
     function worldXYToGridXY(worldX, worldY) { 
-      var numTiles = _board.numTilesSide();
       var boardWorldPos = _board.worldXY();
       var tilesGapXY = _board.gapXY();
       var x = Math.floor((worldX - boardWorldPos.x) / (32 + tilesGapXY.x));
@@ -447,8 +453,27 @@
     
     function clickEventHandler(e) {
       // console.log("Mouse Clicked!" + " x: " + e.stageX + " y: " + e.stageY);
+     
+      var numTiles = _board.numTilesSide();
       var gridXY = worldXYToGridXY(e.stageX, e.stageY);
       console.log("Tile Clicked!" + " x: " + gridXY.x + " y: " + gridXY.y);
+      
+      _matchingTiles.push(_tiles[gridXY.y*numTiles + gridXY.x]); 
+      if (_matchingTiles.length == 2) {
+        
+        var ta = _matchingTiles[0];
+        var tb = _matchingTiles[1]; 
+        
+        if (ta.typeID() === tb.typeID()) { 
+          if (_board.tryConnect(ta, tb)) {
+            console.log("FOUND PATH!");
+          }
+        }
+        else { 
+            console.log("NOT SAME TYPE!");
+        }
+        _matchingTiles.length = 0; 
+      }
     }
 
     /** Public Interfaces */ 
