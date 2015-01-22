@@ -153,8 +153,8 @@
   
   p.srcXY = function() {
     var tilesAssetData = AssetsManager.cacheAsset(this._tile.assetName());
-    var sx = this._tile.gridXY().x * tilesAssetData.width;
-    var sy = this._tile.gridXY().y * tilesAssetData.height;
+    var sx = tilesAssetData.x;
+    var sy = tilesAssetData.y;
     
     return {x: sx, y: sy};
   };
@@ -345,8 +345,8 @@
         grid: genGrid(boardAssetData.template),
         tileTypes: boardAssetData.tile_types,
         numTiles: boardAssetData.num_tiles,
-        worldX: 200,
-        worldY: 50
+        worldX: 0,
+        worldY: 0
       };
       _board = Factory.createBoard(boardData);
       
@@ -354,7 +354,7 @@
       var grid = _board.grid();
       _.each(grid, function(type, idx, list) {
         var x = idx % boardData.numTiles;
-        var y = idx / boardData.numTiles;
+        var y = Math.floor(idx / boardData.numTiles);
         var tileAssetName = boardData.tileTypes[type];
         var tileAssetData = AssetsManager.cacheAsset(tileAssetName);
         var tileData = {
