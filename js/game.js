@@ -260,6 +260,7 @@
     
     var dirs = [ [0, 1], [1, 0], [0, -1], [-1, 0] ];
     var found = false;
+    var foundPath = [];
     
     exp.tileType = function(x, y) { 
       return this._boardData.grid[y * this._boardData.numTiles + x];
@@ -287,6 +288,7 @@
       if (found || numRedir > 2) { return; }
       if (x === dx && y === dy) { 
         found = true; 
+        foundPath.push(path.slice(0));
         return; 
       }
       
@@ -299,7 +301,9 @@
         // Direction of next step
         var nd = i; 
         
-        if (nx >= 0 && nx <= this._boardData.numTiles - 1 && ny >= 0 && ny <= this._boardData.numTiles - 1 && (this.isTileWalkable(nx, ny) || (nx === dx && ny === dy))) {
+        if (nx >= 0 && nx <= this._boardData.numTiles - 1 && 
+            ny >= 0 && ny <= this._boardData.numTiles - 1 && 
+            (this.isTileWalkable(nx, ny) || (nx === dx && ny === dy))) {
          
           if (numRedir <= 2) {
             path.push({x: nx, y: ny});
@@ -307,7 +311,7 @@
               numRedir++; 
             }  
             this.dfs(nx, ny, dx, dy, i, numRedir, path);
-            path.pop();
+            path.pop(); // back-tracing
           }
         }
       }
@@ -355,13 +359,18 @@
     };
     
     exp.tryConnect = function(ta, tb) {
+      foundPath = [];
       var gridXYA = ta.gridXY();
       var gridXYB = tb.gridXY();
-      var path = [];
+      var path = [{x: gridXYA.x, y: gridXYA.y}];
       this.dfs(gridXYA.x, gridXYA.y, gridXYB.x, gridXYB.y, -1, 0, path);
       var res = found; 
       found = false;
       return res;
+    };
+    
+    exp.foundPath = function() {
+      return foundPath;
     };
 
     return exp; 
