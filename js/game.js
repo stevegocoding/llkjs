@@ -261,12 +261,12 @@
     var dirs = [ [0, 1], [1, 0], [0, -1], [-1, 0] ];
     var found = false;
     
-    function tileType(grid, x, y) { 
-      return grid[y][x];
+    exp.tileType = function(x, y) { 
+      return this._boardData.grid[y * this._boardData.numTiles + x];
     }
 
-    function isTileWalkable(grid, x, y) { 
-      return tileType(grid, x, y) == 0; 
+    exp.isTileWalkable = function(x, y) { 
+      return this.tileType(x, y) == 0; 
     }
     
     /** 
@@ -283,11 +283,8 @@
      *    numRedir - current number of re-directions
      *    path - an array that keeps track of the searching path 
      */    
-    function dfs(grid, x, y, dx, dy, dir, numRedir, path) {
-      if (found || numRedir > 2) { 
-        return;
-      }
-      
+    exp.dfs = function(x, y, dx, dy, dir, numRedir, path) {
+      if (found || numRedir > 2) { return; }
       if (x === dx && y === dy) { 
         found = true; 
         return; 
@@ -302,34 +299,14 @@
         // Direction of next step
         var nd = i; 
         
-        // Store next cell in the path
-        path.push({x: nx, y: ny});
-        
-        // if next tile has the same type as current one,
-        // we may find a solution
-        if (tileType(grid, nx, ny) === tileType(grid, dx, dy)) {
-
-          // If the next step's direction is differen from the current one, then 
-          // increase one 
-          if (dir !== -1 && nd !== dir) { 
-            numRedir++; 
-          }  
-          // We found a path
-          if (nx === dx && ny === dy && numRedir <= 2) {
-            found = true;
-            return;
-          }
-        }
-        
-        // The adjensent tile is not dest tile yet, keep searching deeper
-        if (isTileWalkable(grid, nx, ny)) {
-          if (dir != -1 && nd != dir) {
-            numRedir++; 
-          }
-          if (numRedir <= 2) { 
-            dfs(grid, nx, ny, dx, dy, numRedir, path);
-            
-            // Backtracing the path when backing out of last recursion 
+        if (nx >= 0 && nx <= this._boardData.numTiles - 1 && ny >= 0 && ny <= this._boardData.numTiles - 1 && (this.isTileWalkable(nx, ny) || (nx === dx && ny === dy))) {
+         
+          if (numRedir <= 2) {
+            path.push({x: nx, y: ny});
+            if (dir !== -1 && nd !== dir) { 
+              numRedir++; 
+            }  
+            this.dfs(nx, ny, dx, dy, i, numRedir, path);
             path.pop();
           }
         }
@@ -381,8 +358,10 @@
       var gridXYA = ta.gridXY();
       var gridXYB = tb.gridXY();
       var path = [];
-      dfs(this._boardData.grid, gridXYA.x, gridXYA.y, gridXYB.x, gridXYB.y, -1, 0, path);
-      return found;
+      this.dfs(gridXYA.x, gridXYA.y, gridXYB.x, gridXYB.y, -1, 0, path);
+      var res = found; 
+      found = false;
+      return res;
     };
 
     return exp; 
