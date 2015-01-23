@@ -214,7 +214,9 @@
     exp.init = function(boardData, tileData) {
       this._boardData = boardData;
       this._tileData = tileData; 
-      this._displayObject = new TileDisplayObject(this);
+      if (!this.isDummyTile()) {
+        this._displayObject = new TileDisplayObject(this);
+      }
     };
     
     exp.gridXY = function(x, y) { 
@@ -243,8 +245,21 @@
       return this._tileData.assetName;
     };
     
-    exp.typeID = function() {
-      return this._tileData.typeID;
+    exp.typeID = function(typeID) {
+      if (typeID === undefined)
+        return this._tileData.typeID;
+      this._tileData.typeID = typeID;
+    };
+    
+    exp.isDummyTile = function() {
+      return this.typeID() === 0;
+    };
+    
+    exp.onConnected = function() {
+      this.typeID(0);
+      if (this._displayObject) {
+        this._displayObject.visible = false;
+      }
     };
 
     return exp; 
@@ -263,8 +278,10 @@
     var foundPath = [];
     var isVisited = [];
     
-    exp.tileType = function(x, y) { 
-      return this._boardData.grid[y * this._boardData.numTiles + x];
+    exp.tileType = function(x, y, typeID) { 
+      if (typeID === undefined)
+        return this._boardData.grid[y * this._boardData.numTiles + x];
+      this._boardData.grid[y * this._boardData.numTiles + x] = typeID;
     };
 
     exp.isTileWalkable = function(x, y) { 
@@ -319,7 +336,6 @@
             ny >= 0 && ny <= this._boardData.numTiles - 1 && 
             (this.isTileWalkable(nx, ny) || (nx === dx && ny === dy)) && 
             !this.isTileVisited(nx, ny)) {
-          
          
           if (numRedir <= 2) {
             if (dir === -1 && numRedir <= 2) { 
@@ -397,9 +413,22 @@
       var path = [{x: gridXYA.x, y: gridXYA.y}];
       this.dfs(gridXYA.x, gridXYA.y, gridXYB.x, gridXYB.y, -1, 0, path);
       var res = found; 
+      if (res) {
+        this.onConnected(ta, tb);
+      }
+
       found = false;
       return res;
     };
+    
+    exp.onConnected = function(ta, tb) {
+      ta.onConnected(); 
+      tb.onConnected();
+      var gridXYA = ta.gridXY();
+      var gridXYB = tb.gridXY();
+      this.tileType(gridXYA.x, gridXYA.y, 0);
+      this.tileType(gridXYB.x, gridXYB.y, 0);
+    }; 
     
     exp.foundPath = function() {
       return foundPath;
