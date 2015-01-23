@@ -261,14 +261,28 @@
     var dirs = [ [0, 1], [1, 0], [0, -1], [-1, 0] ];
     var found = false;
     var foundPath = [];
+    var isVisited = [];
     
     exp.tileType = function(x, y) { 
       return this._boardData.grid[y * this._boardData.numTiles + x];
-    }
+    };
 
     exp.isTileWalkable = function(x, y) { 
       return this.tileType(x, y) == 0; 
-    }
+    };
+    
+    exp.markTileVisited = function(x, y) { 
+      isVisited[y * this._boardData.numTiles + x] = 1;
+    }; 
+    
+    exp.clearVisited = function(x, y) { 
+      isVisited[y * this._boardData.numTiles + x] = 0;
+    }; 
+
+    exp.isTileVisited = function(x, y) {
+      return isVisited[y * this._boardData.numTiles + x] === 1;
+    };
+    
     
     /** 
      * A Depth-First-Search algorithm that finds if there is 
@@ -303,15 +317,32 @@
         
         if (nx >= 0 && nx <= this._boardData.numTiles - 1 && 
             ny >= 0 && ny <= this._boardData.numTiles - 1 && 
-            (this.isTileWalkable(nx, ny) || (nx === dx && ny === dy))) {
+            (this.isTileWalkable(nx, ny) || (nx === dx && ny === dy)) && 
+            !this.isTileVisited(nx, ny)) {
+          
          
           if (numRedir <= 2) {
-            path.push({x: nx, y: ny});
-            if (dir !== -1 && nd !== dir) { 
-              numRedir++; 
+            if (dir === -1 && numRedir <= 2) { 
+              this.markTileVisited(nx, ny);
+              path.push({x: nx, y: ny});
+              this.dfs(nx, ny, dx, dy, i, numRedir, path);
+              path.pop(); // back-tracing
+              this.clearVisited(nx, ny);
+            } 
+            if (dir === i && numRedir <= 2) {
+              this.markTileVisited(nx, ny);
+              path.push({x: nx, y: ny});
+              this.dfs(nx, ny, dx, dy, dir, numRedir, path);
+              path.pop(); // back-tracing
+              this.clearVisited(nx, ny);
+            }
+            if ((nd !== dir && dir !== -1) && numRedir <= 2) { 
+              this.markTileVisited(nx, ny);
+              path.push({x: nx, y: ny});
+              this.dfs(nx, ny, dx, dy, i, numRedir+1, path);
+              path.pop(); // back-tracing
+              this.clearVisited(nx, ny);
             }  
-            this.dfs(nx, ny, dx, dy, i, numRedir, path);
-            path.pop(); // back-tracing
           }
         }
       }
@@ -360,6 +391,7 @@
     
     exp.tryConnect = function(ta, tb) {
       foundPath = [];
+      isVisited = _.range(this._boardData.numTiles * this._boardData.numTiles).map(function() { return 0; });
       var gridXYA = ta.gridXY();
       var gridXYB = tb.gridXY();
       var path = [{x: gridXYA.x, y: gridXYA.y}];
@@ -397,8 +429,6 @@
     return exp;
   }());
 
-
-  
   /********************************************************
    * The Game Module
    *   - Handles the gamestates

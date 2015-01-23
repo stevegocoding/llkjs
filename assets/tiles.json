@@ -1,10 +1,50 @@
 [ 
   {
-    "name": "blank",
+    "name": "golden_blank",
     "sheet": "tilesheet",
     "x": 4,
     "y": 4,
     "width": 32,
     "height": 32
-  }
+  },
+  {
+    "name": "green_cross",
+    "sheet": "tilesheet",
+    "x": 36,
+    "y": 36,
+    "width": 32,
+    "height": 32
+  }, 
+  {
+    "name": "gray_circle",
+    "sheet": "tilesheet",
+    "x": 275,
+    "y": 268,
+    "width": 32,
+    "height": 32
+  }, 
+  {
+    "name": "orange_triangle",
+    "sheet": "tilesheet",
+    "x": 341,
+    "y": 169,
+    "width": 32,
+    "height": 32
+  }, 
+  {
+    "name": "blue_star",
+    "sheet": "tilesheet",
+    "x": 169,
+    "y": 202,
+    "width": 32,
+    "height": 32
+  }, 
+  {
+    "name": "pink_star",
+    "sheet": "tilesheet",
+    "x": 374,
+    "y": 37,
+    "width": 32,
+    "height": 32
+  } 
 ]
