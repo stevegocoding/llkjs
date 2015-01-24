@@ -19,7 +19,11 @@
       [
         {
           "name": "background",
-          "path": "bg.png"
+          "path": "lpc_home_cup.png"
+        },
+        {
+          "name": "frame",
+          "path": "frame.png"
         },
         {
           "name": "tilesheet",

@@ -1,9 +1,19 @@
 .canvas-container {
-  margin: 50px auto 100px auto; 
+  position: relative;
 }
 
-#game-canvas {
+.canvas-container .game-canvas {
+  position: absolute;
+  left:500px;
+  top:160px;
   display: block;
-  margin-left: auto;
-  margin-right: auto;
+  z-index: 1;
+}
+
+.canvas-container .frame-canvas {
+  position: absolute;
+  left: 25%;
+  top: 0; 
+  display: block;
+  z-index: 0;
 }

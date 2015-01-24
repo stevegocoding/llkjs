@@ -208,7 +208,7 @@
   p.drawHighlight = function(ctx, x, y, w, h) {
     ctx.save();
     ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(255, 100, 100, 0.5)";
+    ctx.strokeStyle = "rgba(50, 50, 50, 0.8)";
     ctx.translate(x-1, y-1);
     ctx.strokeRect(0, 0, w+2, h+2);
     ctx.restore();
@@ -217,7 +217,7 @@
   p.drawSelected = function(ctx, x, y, w, h) { 
     ctx.save();
     ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(100, 100, 100, 0.7)";
+    ctx.strokeStyle = "rgba(200, 200, 200, 0.7)";
     ctx.translate(x-1, y-1);
     ctx.strokeRect(0, 0, w+2, h+2);
     ctx.restore();
@@ -567,6 +567,10 @@
     
     /** Module's Private Variables */
     var _stage;
+    var _bgBitmap; 
+    var _frameBitmp;
+    
+    
     var _curStat;
     var _states = {};
     var _assetManifest = 'assets/assets.json';
@@ -657,25 +661,49 @@
             _highlightTile.highlight(false);
           }
           _highlightTile = tile;
-          _highlightTile.highlight();
+          if (_highlightTile) {
+            _highlightTile.highlight();
+          }
         }
+      }
+    }
+    
+    function tickHandler(e) {
+      if (_stage && _frameStage) { 
+        _stage.update(e);
+        _frameStage.update(e);
       }
     }
 
     /** Public Interfaces */ 
-    exp.init = function(canvas) {
-      _stage = new createjs.Stage(canvas);
+    exp.init = function(gameCanvas, frameCanvas) {
+      var boardAssetData = AssetsManager.cacheAsset('board_data');
+      var bgImg = AssetsManager.cacheAsset('background');
+      var frameImg = AssetsManager.cacheAsset('frame');
+      //frameImg.scaleX = 0.5;
+      //frameImg.scaleY = 0.8;
+      
+      _stage = new createjs.Stage(gameCanvas);
+      _frameStage = new createjs.Stage(frameCanvas);
+      _bgBitmap = new createjs.Bitmap(bgImg);
+      _frameBitmap = new createjs.Bitmap(frameImg);
+      
+      _stage.addChild(_bgBitmap);
+      _frameStage.addChild(_frameBitmap);
+      
+      // Center the board relative to the background
+      var bgWorldX = bgImg.width/2 - boardAssetData.num_tiles * 16;
+      var bgWorldY = 180;
       
       // Create the board 
-      var boardAssetData = AssetsManager.cacheAsset('board_data');
       var boardData = {
         grid: genGrid(boardAssetData.template),
         tileTypes: boardAssetData.tile_types,
         numTiles: boardAssetData.num_tiles,
         gapX: 4,
         gapY: 4,
-        worldX: 0,
-        worldY: 0
+        worldX: bgWorldX,
+        worldY: bgWorldY
       };
       _board = Factory.createBoard(boardData);
       
@@ -716,7 +744,7 @@
       _stage.addEventListener('stagemousemove', mouseMoveHandler); 
 
       createjs.Ticker.timingMode = createjs.Ticker.RAF;
-      createjs.Ticker.addEventListener("tick", _stage);
+      createjs.Ticker.addEventListener("tick", tickHandler);
     }
 
     exp.stage = function() {
@@ -728,8 +756,10 @@
 
   function initGame() {
     // Init the canvas
-    canvasDom = $('#game-canvas')[0];
-    Game.init(canvasDom);
+    var canvasDom = $('#game-canvas')[0];
+    var frameCanvasDom = $('#frame-canvas')[0]; 
+    
+    Game.init(canvasDom, frameCanvasDom);
   }
   
   function startGame() {
