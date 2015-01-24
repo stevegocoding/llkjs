@@ -147,6 +147,7 @@
 
   p._tile = null;
   p._highlight = false;
+  p._selected = false;
 
   p.initialize = function(tile) {
     this._tile= tile;
@@ -154,6 +155,10 @@
   
   p.setHighlight = function(hl) { 
     this._highlight = hl;
+  };
+  
+  p.setSelected = function(sel) {
+    this._selected = sel;
   };
   
   p.srcXY = function() {
@@ -186,7 +191,10 @@
         destXY.x,
         destXY.y);
     
-    if (this._highlight) {
+    if (this._selected) {
+      this.drawSelected(ctx,destXY.x, destXY.y, tilesAssetData.width, tilesAssetData.height);
+    }
+    else if (this._highlight) {
       this.drawHighlight(ctx,destXY.x, destXY.y, tilesAssetData.width, tilesAssetData.height);
     }
 
@@ -201,6 +209,15 @@
     ctx.save();
     ctx.lineWidth = 4;
     ctx.strokeStyle = "rgba(255, 100, 100, 0.5)";
+    ctx.translate(x-1, y-1);
+    ctx.strokeRect(0, 0, w+2, h+2);
+    ctx.restore();
+  };
+  
+  p.drawSelected = function(ctx, x, y, w, h) { 
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(100, 100, 100, 0.7)";
     ctx.translate(x-1, y-1);
     ctx.strokeRect(0, 0, w+2, h+2);
     ctx.restore();
@@ -333,6 +350,15 @@
       }
       if (this._displayObject) {
         this._displayObject.setHighlight(hl);
+      }
+    };
+    
+    exp.select = function(sel) {
+      if (sel === undefined) {
+        sel = true;
+      }
+      if (this._displayObject) {
+        this._displayObject.setSelected(sel);
       }
     };
 
@@ -587,8 +613,9 @@
       var numTiles = _board.numTilesSide();
       var gridXY = worldXYToGridXY(e.stageX, e.stageY);
       console.log("Tile Clicked!" + " x: " + gridXY.x + " y: " + gridXY.y);
-      
-      _matchingTiles.push(_tiles[gridXY.y*numTiles + gridXY.x]); 
+      var selectedTile = _tiles[gridXY.y*numTiles + gridXY.x];
+      selectedTile.select();
+      _matchingTiles.push(selectedTile); 
       if (_matchingTiles.length == 2) {
         
         var ta = _matchingTiles[0];
@@ -613,6 +640,8 @@
             console.log("FOUND PATH!");
           }
         }
+        _matchingTiles[0].select(false);
+        _matchingTiles[1].select(false);
         _matchingTiles.length = 0; 
       }
     }
