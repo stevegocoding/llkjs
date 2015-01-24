@@ -192,6 +192,42 @@
     return this._tile;
   };
   
+  /********************************************************
+   * The Path DisplayObject extending from createjs
+   *******************************************************/
+  var PathDisplayObject = function() {
+    this.initialize();
+  }
+  
+  var super_p = createjs.DisplayObject.prototype;
+  var p = PathDisplayObject.prototype = new createjs.DisplayObject();
+  p.constructor = PathDisplayObject;
+ 
+  p._path = []; 
+  
+  p.initialize = function() {
+  };
+  
+  p.updatePath = function(path) { 
+    this._path = path; 
+  };
+
+  p.draw = function(ctx, ignoreCache) {
+    ctx.save(); 
+    
+    ctx.strokeStyle = "#FF0000";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(this._path[0].x, this._path[0].y);
+    for (var i = 1; i < this._path.length; i++) { 
+      ctx.lineTo(this._path[i].x, this._path[i].y);
+    }
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.restore();
+  };
+  
   
   /********************************************************
    * The Tile Entity
@@ -231,6 +267,11 @@
     exp.worldXY = function() {
       return {x: this._worldX, y: this._worldY};
     };
+   
+    exp.worldXYCenter = function() { 
+      var tileSize = this.tileSize();
+      return {x: this._worldX + tileSize.w/2, y: this._worldY + tileSize.h/2};
+    };
     
     exp.addToStage = function(stage) {
       stage.addChild(this._displayObject);
@@ -243,6 +284,11 @@
    
     exp.assetName = function() {
       return this._tileData.assetName;
+    };
+    
+    exp.tileSize = function() {
+      var tileAssetData = AssetsManager.cacheAsset(this.assetName());
+      return {w: tileAssetData.width, h: tileAssetData.height};
     };
     
     exp.typeID = function(typeID) {
@@ -406,17 +452,16 @@
     };
     
     exp.tryConnect = function(ta, tb) {
-      foundPath = [];
-      isVisited = _.range(this._boardData.numTiles * this._boardData.numTiles).map(function() { return 0; });
       var gridXYA = ta.gridXY();
       var gridXYB = tb.gridXY();
-      var path = [{x: gridXYA.x, y: gridXYA.y}];
+      var path = [];
+      var res; 
+      
+      foundPath = [];
+      isVisited = _.range(this._boardData.numTiles * this._boardData.numTiles).map(function() { return 0; });
+      path.push({x: gridXYA.x, y: gridXYA.y});
       this.dfs(gridXYA.x, gridXYA.y, gridXYB.x, gridXYB.y, -1, 0, path);
-      var res = found; 
-      if (res) {
-        this.onConnected(ta, tb);
-      }
-
+      res = found;
       found = false;
       return res;
     };
@@ -476,6 +521,8 @@
     var _tiles = [];
     var _matchingTiles = [];  // the two tiles that are going to be tested if they can match
     
+    var _pathDispalyObject = null;
+    
     /** Module's Private Methods */ 
     function _regState(name, startFunc, procesFunc, exitFunc) { 
       _states[name] = {
@@ -498,9 +545,16 @@
       return {"x": x, "y": y};
     }
     
+    function showPath() {
+      _pathDisplayObject.visible = true;
+    }
+
+    function hidePath() {
+      _pathDisplayObject.visible = false;
+    }
+    
     function clickEventHandler(e) {
       // console.log("Mouse Clicked!" + " x: " + e.stageX + " y: " + e.stageY);
-     
       var numTiles = _board.numTilesSide();
       var gridXY = worldXYToGridXY(e.stageX, e.stageY);
       console.log("Tile Clicked!" + " x: " + gridXY.x + " y: " + gridXY.y);
@@ -511,13 +565,24 @@
         var ta = _matchingTiles[0];
         var tb = _matchingTiles[1]; 
         
-        if (ta.typeID() === tb.typeID()) { 
+        if (ta.typeID() === tb.typeID() && ta !== tb) { 
           if (_board.tryConnect(ta, tb)) {
+            _board.onConnected(ta, tb);
+           
+            var pathGridXY = _board.foundPath();
+            var pathWorldXY = []; 
+            _.each(pathGridXY[0], function(node) { 
+              var tile = _tiles[node.y*numTiles + node.x]; 
+              var centerXY = tile.worldXYCenter();
+              pathWorldXY.push({x: centerXY.x, y: centerXY.y});
+            });
+           
+            _pathDisplayObject.updatePath(pathWorldXY);
+            showPath();
+            window.setTimeout(hidePath, 600);
+            
             console.log("FOUND PATH!");
           }
-        }
-        else { 
-            console.log("NOT SAME TYPE!");
         }
         _matchingTiles.length = 0; 
       }
@@ -560,6 +625,11 @@
         _tiles.push(tile); 
         _board.setTile(tile, x, y);
       });
+      
+      // Create the path display object
+      _pathDisplayObject = new PathDisplayObject();
+      _stage.addChild(_pathDisplayObject);
+      hidePath();
     };
     
     exp.start = function() {
