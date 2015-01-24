@@ -153,6 +153,10 @@
     this._tile= tile;
   };
   
+  p.destroy = function() {
+    this._tile = null;
+  };
+  
   p.setHighlight = function(hl) { 
     this._highlight = hl;
   };
@@ -312,6 +316,14 @@
     exp.addToStage = function(stage) {
       stage.addChild(this._displayObject);
     }; 
+    
+    exp.removeFromStage = function(stage) {
+      if (this._displayObject) {
+        this._displayObject.destroy();
+        stage.removeChild(this._displayObject);
+        stage.update();
+      }
+    };
     
     exp.updateWorldPos = function() {
       this._worldX = this._boardData.worldX + this._tileData.gridX * (this._tileData.width + this._boardData.gapX); 
@@ -592,7 +604,7 @@
     }
     
     function genGrid(template) {
-      return template; 
+      return template.slice(0); 
     }
 
     function worldXYToGridXY(worldX, worldY) { 
@@ -677,11 +689,8 @@
 
     /** Public Interfaces */ 
     exp.init = function(gameCanvas, frameCanvas) {
-      var boardAssetData = AssetsManager.cacheAsset('board_data');
       var bgImg = AssetsManager.cacheAsset('background');
       var frameImg = AssetsManager.cacheAsset('frame');
-      //frameImg.scaleX = 0.5;
-      //frameImg.scaleY = 0.8;
       
       _stage = new createjs.Stage(gameCanvas);
       _frameStage = new createjs.Stage(frameCanvas);
@@ -691,9 +700,32 @@
       _stage.addChild(_bgBitmap);
       _frameStage.addChild(_frameBitmap);
       
+      // Create the path display object
+      _pathDisplayObject = new PathDisplayObject();
+      _stage.addChild(_pathDisplayObject);
+      hidePath();
+      
+      this.newGame();
+    };
+    
+    exp.start = function() {
+      _stage.addEventListener('click', clickEventHandler);
+      _stage.addEventListener('stagemousemove', mouseMoveHandler); 
+
+      createjs.Ticker.timingMode = createjs.Ticker.RAF;
+      createjs.Ticker.addEventListener("tick", tickHandler);
+    };
+    
+    exp.newGame = function() {
+      
+      var bgImg = AssetsManager.cacheAsset('background');
+      var boardAssetData = AssetsManager.cacheAsset('board_data');
+      
       // Center the board relative to the background
       var bgWorldX = bgImg.width/2 - boardAssetData.num_tiles * 16;
       var bgWorldY = 180;
+      
+      var boardAssetData = AssetsManager.cacheAsset('board_data');
       
       // Create the board 
       var boardData = {
@@ -707,8 +739,19 @@
       };
       _board = Factory.createBoard(boardData);
       
+      // Remove tiles from stage
+      _.each(_tiles, function(t) { 
+        t.removeFromStage(_stage);
+      });
+      
+      // Clear the board
+      //_tiles.length = 0;
+      _tiles = [];
+      
       // Create the tiles
       var grid = _board.grid();
+      var tile;
+
       _.each(grid, function(type, idx, list) {
         var x = idx % boardData.numTiles;
         var y = Math.floor(idx / boardData.numTiles);
@@ -722,37 +765,31 @@
           height: tileAssetData.height,
           assetName: tileAssetName
         };
-        var tile = Factory.createTile(boardData, tileData); 
+        tile = Factory.createTile(boardData, tileData); 
         tile.gridXY(x, y);
         _tiles.push(tile); 
         _board.setTile(tile, x, y);
       });
       
-      // Create the path display object
-      _pathDisplayObject = new PathDisplayObject();
-      _stage.addChild(_pathDisplayObject);
-      hidePath();
-    };
-    
-    exp.start = function() {
       // Add tiles to stage
-      _.each(_tiles, function(tile) { 
-        tile.addToStage(_stage);
+      _.each(_tiles, function(t) { 
+        t.addToStage(_stage);
       });
-      
-      _stage.addEventListener('click', clickEventHandler);
-      _stage.addEventListener('stagemousemove', mouseMoveHandler); 
-
-      createjs.Ticker.timingMode = createjs.Ticker.RAF;
-      createjs.Ticker.addEventListener("tick", tickHandler);
-    }
+    };
 
     exp.stage = function() {
       return _stage;
-    }
+    };
 
     return exp;
   })();
+  
+  function setupUI() {
+    $('#new-game-btn').on('click', function(evt) {
+      evt.preventDefault();
+      Game.newGame();
+    });
+  }
 
   function initGame() {
     // Init the canvas
@@ -775,6 +812,9 @@
         $.when.apply($, AssetsManager.downloadBundles(manifestData))
           .then(function() {
             console.log('All assets downloaded!');
+            
+            // Setup UI event
+            setupUI();
             
             // All assets downloaded, init game
             initGame();
