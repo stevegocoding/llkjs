@@ -570,6 +570,61 @@
   }());
 
   /********************************************************
+   * The Board Generator Module
+   *******************************************************/
+  BoardGenerator = (function() {
+    var exp = {}; 
+
+    function swap(grid, sx, sy, dx, dy, cols) {
+      if (sx === dx || sy === dy) {
+        while (sx === dx || sy === dy) {
+          sx = rand(1, cols - 1); 
+          sy = rand(1, cols - 1);
+          dx = rand(1, cols - 1); 
+          dy = rand(1, cols - 1);
+        }
+      }
+      grid[sy * cols + sx] = grid[sy * cols + sx] ^ grid[dy * cols + dx];
+      grid[dy * cols + dx] = grid[sy * cols + sx] ^ grid[dy * cols + dx];
+      grid[sy * cols + sx] = grid[sy * cols + sx] ^ grid[dy * cols + dx];
+    }
+   
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    function randXY(min, max) {
+      if (max < min) {
+        min = min ^ max; 
+        max = min ^ max; 
+        min = min ^ max;
+      }
+      
+      var dx = rand(min, max); 
+      var dy = rand(min, max);
+      return {x: dx, y: dy};
+    }
+
+    exp.genBoard = function(template, rows, cols) {
+    };
+    
+    exp.shuffle = function(template, rows, cols) {
+      var dxy;
+      var grid = template.slice(0);
+      for (var i = 1; i < rows - 1; i++) { 
+        for (var j = 1; j < cols - 1; j++) {
+          dxy = {x: rand(1, rows-1), y: rand(1, cols-1)};
+          swap(grid, j, i, dxy.x, dxy.y, cols);
+        }
+      }
+      
+      return grid;
+    };
+
+    return exp;
+  })();
+  
+  /********************************************************
    * The Game Module
    *   - Handles the gamestates
    *   - Using some app-level modules such as assets manager
@@ -720,18 +775,19 @@
       
       var bgImg = AssetsManager.cacheAsset('background');
       var boardAssetData = AssetsManager.cacheAsset('board_data');
+      var numTiles = boardAssetData.num_tiles;
       
       // Center the board relative to the background
-      var bgWorldX = bgImg.width/2 - boardAssetData.num_tiles * 16;
+      var bgWorldX = bgImg.width/2 - numTiles * 16;
       var bgWorldY = 180;
       
       var boardAssetData = AssetsManager.cacheAsset('board_data');
       
       // Create the board 
       var boardData = {
-        grid: genGrid(boardAssetData.template),
+        grid: BoardGenerator.shuffle(boardAssetData.template, numTiles, numTiles),
         tileTypes: boardAssetData.tile_types,
-        numTiles: boardAssetData.num_tiles,
+        numTiles: numTiles,
         gapX: 4,
         gapY: 4,
         worldX: bgWorldX,
