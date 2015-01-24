@@ -146,9 +146,14 @@
   p.constructor = TileDisplayObject;
 
   p._tile = null;
+  p._highlight = false;
 
   p.initialize = function(tile) {
     this._tile= tile;
+  };
+  
+  p.setHighlight = function(hl) { 
+    this._highlight = hl;
   };
   
   p.srcXY = function() {
@@ -180,12 +185,25 @@
         tilesAssetData.height,
         destXY.x,
         destXY.y);
+    
+    if (this._highlight) {
+      this.drawHighlight(ctx,destXY.x, destXY.y, tilesAssetData.width, tilesAssetData.height);
+    }
 
     ctx.restore();
   };
   
   p.drawTile = function(ctx, img, x, y, w, h, dx, dy) {
     ctx.drawImage(img, x, y, w, h, dx, dy, w, h); 
+  };
+  
+  p.drawHighlight = function(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(255, 100, 100, 0.5)";
+    ctx.translate(x-1, y-1);
+    ctx.strokeRect(0, 0, w+2, h+2);
+    ctx.restore();
   };
   
   p.tile = function() { 
@@ -211,7 +229,7 @@
   p.updatePath = function(path) { 
     this._path = path; 
   };
-
+  
   p.draw = function(ctx, ignoreCache) {
     ctx.save(); 
     
@@ -227,6 +245,7 @@
 
     ctx.restore();
   };
+  
   
   
   /********************************************************
@@ -305,6 +324,15 @@
       this.typeID(0);
       if (this._displayObject) {
         this._displayObject.visible = false;
+      }
+    };
+    
+    exp.highlight = function(hl) {
+      if (hl === undefined) {
+        hl = true;
+      }
+      if (this._displayObject) {
+        this._displayObject.setHighlight(hl);
       }
     };
 
@@ -520,6 +548,7 @@
     var _board;
     var _tiles = [];
     var _matchingTiles = [];  // the two tiles that are going to be tested if they can match
+    var _highlightTile = null;
     
     var _pathDispalyObject = null;
     
@@ -587,6 +616,22 @@
         _matchingTiles.length = 0; 
       }
     }
+    
+    function mouseMoveHandler(e) {
+      var gridXY = worldXYToGridXY(e.stageX, e.stageY);
+      var numTiles = _board.numTilesSide();
+      var tile;
+      if (gridXY.x >= 0 && gridXY.y < numTiles) {
+        tile = _tiles[gridXY.y*numTiles + gridXY.x]; 
+        if (_highlightTile !== tile) {
+          if (_highlightTile) {
+            _highlightTile.highlight(false);
+          }
+          _highlightTile = tile;
+          _highlightTile.highlight();
+        }
+      }
+    }
 
     /** Public Interfaces */ 
     exp.init = function(canvas) {
@@ -639,6 +684,7 @@
       });
       
       _stage.addEventListener('click', clickEventHandler);
+      _stage.addEventListener('stagemousemove', mouseMoveHandler); 
 
       createjs.Ticker.timingMode = createjs.Ticker.RAF;
       createjs.Ticker.addEventListener("tick", _stage);
