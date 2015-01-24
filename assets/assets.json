@@ -6,10 +6,10 @@
       "content": 
       [
         {
-          "path": "tiles.json"
+          "path": "entities/tiles.json"
         },
         {
-          "path": "board.json"
+          "path": "entities/board.json"
         }
       ]
     }, 
@@ -19,15 +19,15 @@
       [
         {
           "name": "background",
-          "path": "lpc_home_cup.png"
+          "path": "images/lpc_home_cup.png"
         },
         {
           "name": "frame",
-          "path": "frame.png"
+          "path": "images/frame.png"
         },
         {
           "name": "tilesheet",
-          "path": "tiles.png" 
+          "path": "images/tiles.png" 
         }
       ]
     }
