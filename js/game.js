@@ -720,7 +720,8 @@
     function mouseMoveHandler(e) {
       var gridXY = worldXYToGridXY(e.stageX, e.stageY);
       var numTiles = _board.numTilesSide();
-      var tile;
+      if (gridXY.x > numTiles - 1 || gridXY.y > numTiles - 1) return; 
+      
       if (gridXY.x >= 0 && gridXY.y < numTiles) {
         tile = _tiles[gridXY.y*numTiles + gridXY.x]; 
         if (_highlightTile !== tile) {
