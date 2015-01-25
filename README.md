@@ -1,2 +1,5 @@
-# llkjs
-Lianliankan(连连看) game in Javascript as an interview assignment.
+## How to run
+* Install node.js
+* cd into game's directory
+* start the webserver: ```node webserver.js```
+* Run the game in browser: ```http://localhost:5100```
