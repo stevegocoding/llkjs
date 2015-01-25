@@ -1,6 +1,8 @@
 (function(window, $, _, createjs) {
   /********************************************************
-   * Utility Functions
+   * Load image utility with jQuery deferred object
+   *  - with jQuery deferred, we can much cleaner code
+   *      Example: $.when(loadImage('image/url').done().fail()
    *******************************************************/
   function loadImage(url) {
     function _loadImg(deferred) {
@@ -31,8 +33,9 @@
   
   /********************************************************
    * AssetsManager Module
-   *   - Handles the game states
-   *   - Using some global modules such as assets manager
+   *   - Download assets files with jQuery ajax
+   *   - Cache assets
+   *   - Using jQuery deferred objects
    *******************************************************/
   AssetsManager = (function() {
     var exp = {};
@@ -132,8 +135,8 @@
   
   
   /********************************************************
-   * TileDisplayObject, inheriting easel.js DisplayObject 
-   * for tiled sheet rendering 
+   * TileDisplayObject, inheriting easel.js DisplayObject -
+   * for tiles sheet rendering 
    * 
    * Have to use the constructor to extend easel.js objects :((((((
    *******************************************************/ 
@@ -233,6 +236,7 @@
   
   /********************************************************
    * The Path DisplayObject extending from createjs
+   *   - drawing the connection path
    *******************************************************/
   var PathDisplayObject = function() {
     this.initialize();
@@ -272,21 +276,14 @@
   /********************************************************
    * The Tile Entity
    *  - This is the prototype object of all tiles entities
+   *  - Tile Data:
+   *      - asset name
+   *      - grid X, Y: grid coordinates on board
+   *      - type id: the id of the tile's type, 0 for empty/dummy tile 
    *******************************************************/
   Tile = (function() {
     var exp = {}; 
 
-    /*
-       TileEntityData: 
-       {
-         "assetName" 
-         "gridX" --- grid coordinates on board
-         "gridY"
-         
-         "typeID" --- the id of the tile's type, 0 for empty/dummy tile 
-       }
-     */ 
-    
     exp.init = function(boardData, tileData) {
       this._boardData = boardData;
       this._tileData = tileData; 
@@ -381,6 +378,16 @@
    * The Board Entity
    *  - Manage all the tiles on the board
    *  - Implement the matching algorithm
+      - BoardEntityData: 
+        {
+         "worldX" --- the absolute x coords in the world 
+         "worldY" 
+         
+         "nunTiles"
+         "tiles" 
+         
+         "grid" --- An array of cells, each element is tile's type ID
+        }
    *******************************************************/
   Board = (function() {
     var exp = {}; 
@@ -426,7 +433,7 @@
      *    dir - the direction taken when moving from previous cell to current one 
      *    numRedir - current number of re-directions
      *    path - an array that keeps track of the searching path 
-     */    
+     **/    
     exp.dfs = function(x, y, dx, dy, dir, numRedir, path) {
       if (found || numRedir > 2) { return; }
       if (x === dx && y === dy) { 
@@ -450,6 +457,7 @@
             !this.isTileVisited(nx, ny)) {
          
           if (numRedir <= 2) {
+            // when we start from this tile (dir === -1), we don't increase re-direction
             if (dir === -1 && numRedir <= 2) { 
               this.markTileVisited(nx, ny);
               path.push({x: nx, y: ny});
@@ -457,6 +465,7 @@
               path.pop(); // back-tracing
               this.clearVisited(nx, ny);
             } 
+            // still the same direction, keep searching
             if (dir === i && numRedir <= 2) {
               this.markTileVisited(nx, ny);
               path.push({x: nx, y: ny});
@@ -464,6 +473,7 @@
               path.pop(); // back-tracing
               this.clearVisited(nx, ny);
             }
+            // re-direction, increase numRedir
             if ((nd !== dir && dir !== -1) && numRedir <= 2) { 
               this.markTileVisited(nx, ny);
               path.push({x: nx, y: ny});
@@ -476,17 +486,6 @@
       }
     }
       
-    /** 
-        BoardEntityData: 
-        {
-         "worldX" --- the absolute x coords in the world 
-         "worldY" 
-         
-         "nunTiles"
-         "tiles" 
-         "grid" --- An array of cells, each element is tile's type ID
-        }
-     */
 
     exp.init = function(boardData) { 
       var numTiles = boardData.numTiles * boardData.numTiles;
@@ -555,7 +554,8 @@
   }());
   
   /********************************************************
-   * The Tile Factory for tiles creation 
+   * The Tile Factory for tiles and board creation 
+   *   - No consturctors, only use Object.create(), much cleaner
    *******************************************************/
   Factory = (function() {
     var exp = {}; 
@@ -576,7 +576,7 @@
   }());
 
   /********************************************************
-   * The Board Generator Module
+   * A Simple Board Generator Module
    *******************************************************/
   BoardGenerator = (function() {
     var exp = {}; 
@@ -620,7 +620,6 @@
           swap(grid, j, i, dxy.x, dxy.y, cols);
         }
       }
-      
       return grid;
     };
 
@@ -629,8 +628,6 @@
   
   /********************************************************
    * The Game Module
-   *   - Handles the gamestates
-   *   - Using some app-level modules such as assets manager
    *******************************************************/
   Game = (function() {
     var exp = {};
@@ -851,8 +848,7 @@
         t.addToStage(_stage);
       });
       
-      //showNewGameStatus();
-      showWinningStatus();
+      showNewGameStatus();
     };
 
     exp.stage = function() {
