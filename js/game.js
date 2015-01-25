@@ -541,6 +541,12 @@
       this.tileType(gridXYB.x, gridXYB.y, 0);
     }; 
     
+    exp.isClear = function() {
+      return _.every(this.grid(), function(t) {
+        return t === 0; 
+      });
+    };
+    
     exp.foundPath = function() {
       return foundPath;
     };
@@ -605,9 +611,6 @@
       return {x: dx, y: dy};
     }
 
-    exp.genBoard = function(template, rows, cols) {
-    };
-    
     exp.shuffle = function(template, rows, cols) {
       var dxy;
       var grid = template.slice(0);
@@ -632,7 +635,9 @@
   Game = (function() {
     var exp = {};
     
-    /** Module's Private Variables */
+    /** 
+     * Module's Private Variables 
+     **/
     var _stage;
     var _bgBitmap; 
     var _frameBitmp;
@@ -649,7 +654,9 @@
     
     var _pathDispalyObject = null;
     
-    /** Module's Private Methods */ 
+    /** 
+     * Module's Private Functions 
+     **/ 
     function _regState(name, startFunc, procesFunc, exitFunc) { 
       _states[name] = {
         'onStart': startFunc,
@@ -707,8 +714,11 @@
             _pathDisplayObject.updatePath(pathWorldXY);
             showPath();
             window.setTimeout(hidePath, 600);
-            
             console.log("FOUND PATH!");
+            
+            if (_board.isClear()) {
+              showWinningStatus();
+            }
           }
         }
         _matchingTiles[0].select(false);
@@ -742,8 +752,18 @@
         _frameStage.update(e);
       }
     }
+   
+    function showNewGameStatus() {
+      $('#status').text("Enjoy!").css("left", "880px");
+      
+    }
+    function showWinningStatus() {
+      $('#status').text("Clear! Offer Please:)").css("left", "760px");
+    }
 
-    /** Public Interfaces */ 
+    /** 
+     * Public Interfaces 
+     **/ 
     exp.init = function(gameCanvas, frameCanvas) {
       var bgImg = AssetsManager.cacheAsset('background');
       var frameImg = AssetsManager.cacheAsset('frame');
@@ -773,7 +793,6 @@
     };
     
     exp.newGame = function() {
-      
       var bgImg = AssetsManager.cacheAsset('background');
       var boardAssetData = AssetsManager.cacheAsset('board_data');
       var numTiles = boardAssetData.num_tiles;
@@ -802,8 +821,7 @@
       });
       
       // Clear the board
-      //_tiles.length = 0;
-      _tiles = [];
+      _tiles.length = 0;
       
       // Create the tiles
       var grid = _board.grid();
@@ -832,6 +850,9 @@
       _.each(_tiles, function(t) { 
         t.addToStage(_stage);
       });
+      
+      //showNewGameStatus();
+      showWinningStatus();
     };
 
     exp.stage = function() {
