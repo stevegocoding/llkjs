@@ -1,0 +1,30 @@
+{
+  "name": "llk",
+  "version": "1.0.0",
+  "description": "a",
+  "main": "webserver.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevegocoding/llkjs.git"
+  },
+  "keywords": [
+    "puzzle",
+    "game"
+  ],
+  "author": "Guangfu Shi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/stevegocoding/llkjs/issues"
+  },
+  "homepage": "https://github.com/stevegocoding/llkjs",
+  "devDependencies": {
+    "broccoli": "^0.15.3",
+    "broccoli-concat": "0.0.13",
+    "broccoli-funnel": "^0.2.2",
+    "broccoli-merge-trees": "^0.2.1",
+    "broccoli-uglify-js": "^0.1.3"
+  }
+}
